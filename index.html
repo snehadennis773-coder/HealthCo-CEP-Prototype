@@ -1,0 +1,1134 @@
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HealthCo - AI Health Assistant & Recovery Simulator</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Chart.js for Recovery Vitals Graph -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+              dark: '#0f172a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbars and Pulse Animations */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    @keyframes wave {
+      0%, 100% { height: 8px; }
+      50% { height: 28px; }
+    }
+    .wave-bar {
+      animation: wave 1.2s infinite ease-in-out;
+    }
+    .wave-bar:nth-child(2) { animation-delay: 0.2s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.4s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.1s; }
+    .wave-bar:nth-child(5) { animation-delay: 0.3s; }
+
+    /* Phone Mockup Styling */
+    .phone-screen {
+      box-shadow: 0 20px 40px -15px rgba(37, 99, 235, 0.15);
+      border: 10px solid #0f172a;
+      border-radius: 36px;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- ==================== HEADER BAR ==================== -->
+  <header class="bg-white border-b border-slate-200 text-slate-800 px-4 py-3 sticky top-0 z-50 flex items-center justify-between shadow-xs">
+    <div class="flex items-center space-x-3">
+      <div class="bg-blue-600 text-white p-2 rounded-xl flex items-center justify-center font-bold text-lg shadow-sm">
+        <i class="fa-solid fa-heart-pulse text-xl"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg leading-none tracking-tight text-slate-900">HealthCo</h1>
+        <span class="text-xs text-blue-600 font-medium">AI Health & Recovery Platform</span>
+      </div>
+    </div>
+
+    <!-- Mode Toggle Switch -->
+    <div class="bg-slate-100 p-1 rounded-xl border border-slate-200 flex items-center space-x-1">
+      <button id="btn-mode-phone" onclick="switchMainMode('phone')" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 transition-all bg-blue-600 text-white shadow-xs">
+        <i class="fa-solid fa-mobile-screen"></i>
+        <span class="hidden sm:inline">Smartphone Simulator</span>
+      </button>
+      <button id="btn-mode-deck" onclick="switchMainMode('deck')" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 transition-all text-slate-600 hover:text-blue-600">
+        <i class="fa-solid fa-file-powerpoint"></i>
+        <span class="hidden sm:inline">Presentation Deck</span>
+      </button>
+    </div>
+
+    <!-- Actions / Profile -->
+    <div class="flex items-center space-x-3">
+      <button onclick="triggerNotificationToast()" class="relative p-2 text-slate-500 hover:text-blue-600 rounded-lg hover:bg-slate-100 transition">
+        <i class="fa-regular fa-bell text-lg"></i>
+        <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+      </button>
+      
+      <div id="header-user-menu" class="hidden sm:flex items-center space-x-2 border-l border-slate-200 pl-3">
+        <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs text-white">
+          SD
+        </div>
+        <span class="text-xs text-slate-700 font-medium">Sneha Dennis</span>
+        <button onclick="logoutUser()" title="Log Out" class="text-slate-400 hover:text-red-500 p-1 transition ml-1">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT CONTAINER ==================== -->
+  <main class="flex-grow flex items-center justify-center p-2 sm:p-6 overflow-hidden">
+
+    <!-- ================================================================= -->
+    <!-- MODE 1: SMARTPHONE SIMULATOR MODE                                  -->
+    <!-- ================================================================= -->
+    <div id="mode-phone-container" class="w-full max-w-sm sm:max-w-md h-[780px] bg-white phone-screen flex flex-col relative overflow-hidden transition-all">
+      
+      <!-- Phone Top Notch / Bar -->
+      <div class="bg-slate-900 text-slate-400 text-[11px] px-6 py-1.5 flex justify-between items-center shrink-0 z-20">
+        <span class="font-semibold text-slate-200">9:41 AM</span>
+        <div class="w-16 h-3 bg-slate-950 rounded-full mx-auto"></div>
+        <div class="flex items-center space-x-1.5">
+          <i class="fa-solid fa-signal text-[10px]"></i>
+          <i class="fa-solid fa-wifi text-[10px]"></i>
+          <i class="fa-solid fa-battery-full text-[11px] text-blue-400"></i>
+        </div>
+      </div>
+
+      <!-- App Screen Content Scrollable Area -->
+      <div id="phone-screen-body" class="flex-grow overflow-y-auto bg-slate-50 text-slate-800 relative flex flex-col">
+        
+        <!-- ------------------------------------------------------------- -->
+        <!-- SCREEN 0: LOGIN & AUTHENTICATION                              -->
+        <!-- ------------------------------------------------------------- -->
+        <div id="screen-auth" class="flex-grow p-6 flex flex-col justify-between bg-gradient-to-b from-blue-50 via-white to-blue-100 text-slate-800">
+          <div class="text-center mt-6">
+            <div class="w-16 h-16 bg-blue-600 rounded-2xl mx-auto flex items-center justify-center text-3xl text-white font-bold shadow-lg shadow-blue-500/20 mb-3">
+              <i class="fa-solid fa-heart-pulse"></i>
+            </div>
+            <h2 class="text-2xl font-bold tracking-tight text-slate-900">Welcome to HealthCo</h2>
+            <p class="text-xs text-blue-700 mt-1 font-medium">AI-Powered Next-Gen Clinical Assistant</p>
+          </div>
+
+          <div class="bg-white p-5 rounded-2xl border border-blue-100 shadow-xl shadow-blue-500/5 my-auto space-y-3">
+            <div class="border-b border-slate-100 pb-2 mb-1 flex justify-between items-center">
+              <span class="text-xs font-semibold text-blue-600 uppercase tracking-wider">Demo User Profile</span>
+              <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">Auto-Filled</span>
+            </div>
+            <div>
+              <label class="text-[11px] text-slate-600 block mb-1">Full Name</label>
+              <input type="text" id="login-fullname" value="Sneha Dennis" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-600">
+            </div>
+            <div>
+              <label class="text-[11px] text-slate-600 block mb-1">Email / Health ID</label>
+              <input type="email" id="login-email" value="sneha.dennis@healthco.org" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-600">
+            </div>
+            <div>
+              <label class="text-[11px] text-slate-600 block mb-1">Password</label>
+              <input type="password" value="••••••••••••" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-blue-600">
+            </div>
+            <button onclick="loginUser()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-2.5 rounded-lg text-xs shadow-md shadow-blue-500/20 transition transform active:scale-95 mt-2 flex items-center justify-center space-x-2">
+              <span>Sign In to Dashboard</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+
+          <div class="text-center text-xs text-slate-500">
+            Need an account? <a href="#" onclick="alert('Demo Mode: Account pre-created for Sneha Dennis')" class="text-blue-600 font-medium hover:underline">Create Account</a>
+          </div>
+        </div>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- SCREEN 1: HOME DASHBOARD                                      -->
+        <!-- ------------------------------------------------------------- -->
+        <div id="screen-dashboard" class="hidden p-4 space-y-4 pb-20">
+          
+          <!-- Profile Badge -->
+          <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-2xl p-4 shadow-md shadow-blue-600/15 relative overflow-hidden">
+            <div class="absolute right-[-10px] top-[-10px] opacity-10 text-8xl text-white pointer-events-none">
+              <i class="fa-solid fa-hospital-user"></i>
+            </div>
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-full bg-white/20 border-2 border-white/40 p-0.5 flex items-center justify-center font-bold text-white text-base">
+                  SD
+                </div>
+                <div>
+                  <h3 class="font-bold text-sm tracking-wide">Sneha Dennis</h3>
+                  <p class="text-[11px] text-blue-100 font-mono">ID: #HC-8829</p>
+                </div>
+              </div>
+              <button onclick="logoutUser()" title="Logout" class="bg-white/10 hover:bg-red-500/30 text-white p-2 rounded-lg transition border border-white/20">
+                <i class="fa-solid fa-power-off text-xs"></i>
+              </button>
+            </div>
+            <div class="grid grid-cols-3 gap-2 bg-black/15 p-2 rounded-xl text-center text-[10px] border border-white/10">
+              <div>
+                <span class="text-blue-100 block">Age</span>
+                <span class="font-semibold text-white">22 Yrs</span>
+              </div>
+              <div class="border-x border-white/15">
+                <span class="text-blue-100 block">Blood Group</span>
+                <span class="font-bold text-white">O+</span>
+              </div>
+              <div>
+                <span class="text-blue-100 block">Status</span>
+                <span class="font-semibold text-sky-200">Post-Op Rec.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Live Vitals Tracker Bar -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Live Vitals Tracker</h4>
+              <span class="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium flex items-center border border-blue-200">
+                <span class="w-1.5 h-1.5 rounded-full bg-blue-600 mr-1 animate-ping"></span> Live Sync
+              </span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex items-center space-x-3">
+                <div class="p-2.5 bg-rose-50 text-rose-500 rounded-lg"><i class="fa-solid fa-heart-pulse"></i></div>
+                <div>
+                  <div class="text-[10px] text-slate-500">Heart Rate</div>
+                  <div class="text-sm font-bold text-slate-800">72 <span class="text-[10px] font-normal text-slate-500">bpm</span></div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex items-center space-x-3">
+                <div class="p-2.5 bg-sky-50 text-sky-600 rounded-lg"><i class="fa-solid fa-lungs"></i></div>
+                <div>
+                  <div class="text-[10px] text-slate-500">SpO2 Level</div>
+                  <div class="text-sm font-bold text-slate-800">98% <span class="text-[10px] font-normal text-slate-500">Normal</span></div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex items-center space-x-3">
+                <div class="p-2.5 bg-blue-50 text-blue-600 rounded-lg"><i class="fa-solid fa-gauge-high"></i></div>
+                <div>
+                  <div class="text-[10px] text-slate-500">Blood Pressure</div>
+                  <div class="text-sm font-bold text-slate-800">120/80 <span class="text-[10px] font-normal text-slate-500">mmHg</span></div>
+                </div>
+              </div>
+              <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex items-center space-x-3">
+                <div class="p-2.5 bg-cyan-50 text-cyan-600 rounded-lg"><i class="fa-solid fa-glass-water"></i></div>
+                <div>
+                  <div class="text-[10px] text-slate-500">Hydration</div>
+                  <div class="text-sm font-bold text-slate-800"><span id="dash-water-val">5</span>/8 <span class="text-[10px] font-normal text-slate-500">glasses</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recovery Progress & Health Score Widget -->
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+            <div class="flex justify-between items-center mb-1.5">
+              <span class="text-xs font-bold text-slate-700">Overall Recovery Index</span>
+              <span class="text-xs font-extrabold text-blue-600">88/100 (Optimal)</span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+              <div class="bg-gradient-to-r from-blue-500 to-blue-700 h-2.5 rounded-full" style="width: 88%"></div>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-2">Post-op day 4 target on track. Pain scores stabilized.</p>
+          </div>
+
+          <!-- Quick Action Launchers -->
+          <div>
+            <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Quick Services</h4>
+            <div class="grid grid-cols-2 gap-2.5">
+              <button onclick="navToPhoneTab('tab-triage')" class="bg-gradient-to-br from-blue-600 to-blue-800 text-white p-3 rounded-xl text-left shadow-xs hover:shadow-md transition">
+                <i class="fa-solid fa-robot text-lg mb-1 block"></i>
+                <div class="text-xs font-bold">AI Symptom Assessment</div>
+                <div class="text-[10px] opacity-80">Instant Urgency Test</div>
+              </button>
+              <button onclick="navToPhoneTab('tab-clinics')" class="bg-gradient-to-br from-sky-600 to-blue-700 text-white p-3 rounded-xl text-left shadow-xs hover:shadow-md transition">
+                <i class="fa-solid fa-user-doctor text-lg mb-1 block"></i>
+                <div class="text-xs font-bold">Find Clinics</div>
+                <div class="text-[10px] opacity-80">Book Doctors & Slots</div>
+              </button>
+              <button onclick="navToPhoneTab('tab-recovery')" class="bg-gradient-to-br from-indigo-600 to-indigo-800 text-white p-3 rounded-xl text-left shadow-xs hover:shadow-md transition">
+                <i class="fa-solid fa-kit-medical text-lg mb-1 block"></i>
+                <div class="text-xs font-bold">Recovery Care</div>
+                <div class="text-[10px] opacity-80">Meds, Vitals & Diet</div>
+              </button>
+              <button onclick="navToPhoneTab('tab-sos')" class="bg-gradient-to-br from-rose-600 to-red-700 text-white p-3 rounded-xl text-left shadow-xs hover:shadow-md transition">
+                <i class="fa-solid fa-triangle-exclamation text-lg mb-1 block"></i>
+                <div class="text-xs font-bold">Emergency SOS</div>
+                <div class="text-[10px] opacity-80">Dual Dispatch System</div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- MODULE 1: AI SYMPTOM ASSESSMENT                               -->
+        <!-- ------------------------------------------------------------- -->
+        <div id="screen-triage" class="hidden p-4 space-y-4 pb-20">
+          <div class="bg-blue-600 text-white p-3.5 rounded-xl flex items-center space-x-3 shadow-xs">
+            <i class="fa-solid fa-brain text-2xl text-blue-100"></i>
+            <div>
+              <h3 class="font-bold text-sm">AI Symptom Assessment</h3>
+              <p class="text-[10px] text-blue-100">Powered by FastAPI & OpenAI Clinical Engine</p>
+            </div>
+          </div>
+
+          <!-- Multi-modal input options -->
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+            <div>
+              <label class="text-xs font-bold text-slate-700 block mb-1">1. Describe Symptoms</label>
+              <textarea id="triage-text-input" rows="2" placeholder="e.g., Mild fever, persistent dry cough for 2 days, chest tightness..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs focus:outline-none focus:border-blue-600">Sharp surgical site discomfort and mild fever (99.8 F) since morning.</textarea>
+            </div>
+
+            <!-- Voice Simulator -->
+            <div class="bg-blue-50/50 p-2.5 rounded-lg border border-blue-100 flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <button id="btn-voice-sim" onclick="toggleVoiceSim()" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs shadow-xs">
+                  <i id="voice-icon" class="fa-solid fa-microphone"></i>
+                </button>
+                <span class="text-[11px] font-medium text-slate-700" id="voice-status-text">Voice Input Simulator</span>
+              </div>
+              <div id="voice-waveform" class="hidden flex items-end space-x-1 h-5">
+                <div class="w-1 bg-blue-600 rounded wave-bar"></div>
+                <div class="w-1 bg-blue-600 rounded wave-bar"></div>
+                <div class="w-1 bg-blue-600 rounded wave-bar"></div>
+                <div class="w-1 bg-blue-600 rounded wave-bar"></div>
+              </div>
+            </div>
+
+            <!-- Lab Test Upload Preview Simulator -->
+            <div>
+              <label class="text-xs font-bold text-slate-700 block mb-1">2. Upload Report / Lab Test (Simulator)</label>
+              <div class="border-2 border-dashed border-slate-300 hover:border-blue-600 rounded-lg p-2.5 text-center cursor-pointer transition bg-slate-50" onclick="triggerReportUploadSim()">
+                <div id="report-upload-placeholder" class="text-slate-500 text-[11px]">
+                  <i class="fa-solid fa-cloud-arrow-up text-blue-500 block text-base mb-1"></i>
+                  Tap to upload Blood Report / Scan image
+                </div>
+                <div id="report-upload-preview" class="hidden flex items-center justify-center space-x-2 text-blue-700 text-xs font-medium bg-blue-50 p-1.5 rounded">
+                  <i class="fa-solid fa-file-medical"></i>
+                  <span>CBC_BloodReport_SnehaD.pdf (Attached)</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Severity Slider & Duration -->
+            <div class="grid grid-cols-2 gap-3 pt-1">
+              <div>
+                <label class="text-[11px] font-bold text-slate-700 block mb-1">Severity (1-10): <span id="severity-val" class="text-blue-600">4</span></label>
+                <input type="range" min="1" max="10" value="4" oninput="document.getElementById('severity-val').innerText = this.value" class="w-full accent-blue-600">
+              </div>
+              <div>
+                <label class="text-[11px] font-bold text-slate-700 block mb-1">Duration</label>
+                <select id="duration-select" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-1.5 text-xs">
+                  <option>Less than 24 hours</option>
+                  <option selected>1 to 3 days</option>
+                  <option>More than a week</option>
+                </select>
+              </div>
+            </div>
+
+            <button onclick="runAITriageEngine()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-xs shadow-xs transition flex items-center justify-center space-x-2">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>Run AI Analysis Engine</span>
+            </button>
+          </div>
+
+          <!-- Triage Result Output Box -->
+          <div id="triage-result-card" class="hidden bg-white rounded-xl border border-slate-200 p-4 shadow-md transition-all">
+            <div class="flex items-center justify-between pb-2 border-b">
+              <div class="flex items-center space-x-2">
+                <span id="urgency-badge" class="w-3 h-3 rounded-full bg-amber-500"></span>
+                <span id="urgency-title" class="font-bold text-xs uppercase tracking-wide">MODERATE RISK</span>
+              </div>
+            </div>
+            <div class="py-3 text-xs text-slate-700 space-y-2">
+              <p id="triage-analysis-text">AI Evaluation suggests mild post-surgical localized inflammation. No signs of systemic sepsis detected.</p>
+              <div class="bg-amber-50 border border-amber-200 text-amber-800 p-2 rounded text-[11px]">
+                <strong>Recommended Action:</strong> Schedule a teleconsultation or clinic visit within 24 hours. Keep incision clean and track temperature.
+              </div>
+            </div>
+            <div id="triage-cta-container" class="flex space-x-2 pt-1">
+              <button onclick="navToPhoneTab('tab-clinics')" class="flex-1 bg-blue-600 text-white font-semibold py-2 rounded-lg text-xs flex items-center justify-center space-x-1 shadow-xs">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Book Appointment</span>
+              </button>
+              <button onclick="navToPhoneTab('tab-sos')" class="bg-rose-100 text-rose-700 hover:bg-rose-200 font-semibold px-3 py-2 rounded-lg text-xs flex items-center space-x-1">
+                <i class="fa-solid fa-phone"></i>
+                <span>SOS</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- MODULE 2: HEALTHCARE SERVICES & CLINIC FINDER                 -->
+        <!-- ------------------------------------------------------------- -->
+        <div id="screen-clinics" class="hidden p-4 space-y-4 pb-20">
+          <div class="flex justify-between items-center">
+            <h3 class="font-bold text-sm text-slate-800">Nearby Clinics & Specialists</h3>
+            <span class="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full"><i class="fa-solid fa-location-dot text-blue-600 mr-1"></i> within 5 km</span>
+          </div>
+
+          <!-- Doctor/Clinic Cards -->
+          <div class="space-y-3">
+            <!-- Card 1 -->
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-2">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 class="font-bold text-xs text-slate-800">Dr. Ananya Sharma</h4>
+                  <p class="text-[11px] text-blue-600 font-medium">Senior Cardiologist & General Physician</p>
+                  <p class="text-[10px] text-slate-500">Apollo Medical Hub • 1.2 km away</p>
+                </div>
+                <span class="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-200">★ 4.9</span>
+              </div>
+              <div class="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
+                <span class="text-slate-500"><i class="fa-regular fa-clock text-blue-600 mr-1"></i>Next Available: Today 4:30 PM</span>
+                <button onclick="openBookingModal('Dr. Ananya Sharma', 'Cardiology & General')" class="bg-blue-600 text-white font-semibold px-3 py-1 rounded-lg text-xs hover:bg-blue-700 transition">Book</button>
+              </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-2">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 class="font-bold text-xs text-slate-800">Dr. Rajesh Verma</h4>
+                  <p class="text-[11px] text-sky-600 font-medium">Post-Op Recovery Specialist</p>
+                  <p class="text-[10px] text-slate-500">City Health Care Clinic • 2.8 km away</p>
+                </div>
+                <span class="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-200">★ 4.8</span>
+              </div>
+              <div class="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
+                <span class="text-slate-500"><i class="fa-regular fa-clock text-blue-600 mr-1"></i>Next Available: Tomorrow 10:00 AM</span>
+                <button onclick="openBookingModal('Dr. Rajesh Verma', 'Post-Op Recovery')" class="bg-blue-600 text-white font-semibold px-3 py-1 rounded-lg text-xs hover:bg-blue-700 transition">Book</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Digital Token Display Card (If booked) -->
+          <div id="active-booking-receipt" class="hidden bg-gradient-to-br from-blue-700 to-blue-900 text-white p-4 rounded-xl border border-blue-400/40 shadow-lg">
+            <div class="flex justify-between items-center border-b border-blue-600/50 pb-2 mb-2">
+              <span class="text-[10px] text-blue-200 font-mono tracking-widest uppercase">Digital Appointment Pass</span>
+              <span class="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded border border-white/30 font-semibold">Confirmed</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <div id="receipt-doc-name" class="font-bold text-xs">Dr. Ananya Sharma</div>
+                <div id="receipt-details" class="text-[11px] text-blue-100">Today, 4:30 PM • In-Person</div>
+                <div class="text-[10px] text-blue-200 mt-1">Token No: <strong id="receipt-token-id" class="text-white">#HC-TK-9920</strong></div>
+              </div>
+              <!-- QR Code Mockup -->
+              <div class="w-16 h-16 bg-white p-1 rounded-lg flex items-center justify-center">
+                <div class="w-full h-full bg-slate-900 p-1 flex flex-col justify-between">
+                  <div class="flex justify-between"><div class="w-3 h-3 bg-blue-500"></div><div class="w-3 h-3 bg-blue-500"></div></div>
+                  <div class="text-center text-[6px] text-white font-mono">HEALTHCO</div>
+                  <div class="flex justify-between"><div class="w-3 h-3 bg-blue-500"></div><div class="w-3 h-3 bg-slate-900"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Booking Modal Popup -->
+        <div id="booking-modal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-30 flex items-center justify-center p-4">
+          <div class="bg-white w-full max-w-xs rounded-2xl p-4 shadow-xl space-y-3">
+            <div class="flex justify-between items-center border-b pb-2">
+              <h4 id="modal-doc-title" class="font-bold text-xs text-slate-800">Book Consultation</h4>
+              <button onclick="closeBookingModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div>
+              <label class="text-[11px] text-slate-600 block mb-1">Consultation Mode</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" id="btn-mode-inperson" onclick="setConsultMode('In-Person')" class="py-1.5 border border-blue-600 bg-blue-50 text-blue-700 font-semibold rounded text-xs">In-Person</button>
+                <button type="button" id="btn-mode-tele" onclick="setConsultMode('Teleconsultation')" class="py-1.5 border border-slate-300 bg-white text-slate-600 rounded text-xs">Teleconsult</button>
+              </div>
+            </div>
+            <div>
+              <label class="text-[11px] text-slate-600 block mb-1">Select Date & Time Slot</label>
+              <input type="datetime-local" id="booking-time-input" class="w-full border border-slate-300 rounded p-1.5 text-xs">
+            </div>
+            <button onclick="confirmAppointmentBooking()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-xs shadow-xs">
+              Confirm & Generate Token
+            </button>
+          </div>
+        </div>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- MODULE 3: EMERGENCY & DUAL SOS SYSTEM                        -->
+        <!-- ------------------------------------------------------------- -->
+        <div id="screen-sos" class="hidden p-4 space-y-4 pb-20">
+          
+          <div class="bg-rose-50 border border-rose-200 text-rose-900 p-3.5 rounded-xl flex items-center space-x-3 shadow-xs">
+            <i class="fa-solid fa-shield-cat text-2xl text-rose-600"></i>
+            <div>
+              <h3 class="font-bold text-sm text-rose-900">Emergency & Dual SOS System</h3>
+              <p class="text-[10px] text-rose-700">Parallel Ambulance Dispatch & Primary Contact Alert</p>
+            </div>
+          </div>
+
+          <!-- Big SOS Trigger Button -->
+          <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs text-center space-y-3">
+            <p class="text-xs text-slate-600">Pressing SOS triggers emergency dispatch with live GPS and dials primary contact.</p>
+            
+            <button onclick="triggerDualSOSCountdown()" class="w-28 h-28 mx-auto bg-gradient-to-br from-red-500 to-rose-700 hover:from-red-600 hover:to-rose-800 text-white rounded-full font-black text-xl shadow-xl shadow-rose-500/30 flex flex-col items-center justify-center border-4 border-rose-100 active:scale-95 transition">
+              <i class="fa-solid fa-triangle-exclamation text-2xl mb-1"></i>
+              <span>SOS</span>
+            </button>
+            <p class="text-[10px] text-slate-400">Single-Tap Instant Dispatch Protocol</p>
+          </div>
+
+          <!-- Emergency Contact Manager -->
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-2">
+            <div class="flex justify-between items-center border-b pb-2">
+              <h4 class="font-bold text-xs text-slate-800">Primary Emergency Contacts</h4>
+              <button onclick="showAddContactPrompt()" class="text-xs text-blue-600 font-semibold hover:underline">+ Add</button>
+            </div>
+            
+            <div id="contact-list" class="space-y-2">
+              <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg border text-xs">
+                <div>
+                  <div class="font-semibold text-slate-800">Mom (Primary Contact) <span class="text-[9px] bg-rose-100 text-rose-700 px-1 rounded">Primary</span></div>
+                  <div class="text-[10px] text-slate-500">+91 98765 43210</div>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-trash text-xs"></i></button>
+              </div>
+              <div class="flex justify-between items-center bg-slate-50 p-2 rounded-lg border text-xs">
+                <div>
+                  <div class="font-semibold text-slate-800">Dr. Rajesh (Family Doctor)</div>
+                  <div class="text-[10px] text-slate-500">+91 91234 56789</div>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-trash text-xs"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Offline CPR & First-Aid Quick Guides -->
+          <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-2">
+            <h4 class="font-bold text-xs text-slate-800">Offline CPR & First-Aid Guides</h4>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <button onclick="alert('CPR Steps:\n1. Push hard & fast in center of chest (100-120 bpm)\n2. Allow full chest recoil\n3. Give rescue breaths if trained.')" class="p-2 bg-slate-50 hover:bg-slate-100 rounded text-left border text-[11px] font-medium text-slate-700">
+                <i class="fa-solid fa-heart-circle-bolt text-red-500 mr-1"></i> Adult CPR Guide
+              </button>
+              <button onclick="alert('Choking First-Aid:\n1. Perform 5 back blows between shoulder blades\n2. Perform 5 abdominal thrusts (Heimlich Maneuver)')" class="p-2 bg-slate-50 hover:bg-slate-100 rounded text-left border text-[11px] font-medium text-slate-700">
+                <i class="fa-solid fa-hands-holding text-amber-500 mr-1"></i> Choking First Aid
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- MODULE 4: RECOVERY & AFTER-CARE DASHBOARD                     -->
+        <!-- ------------------------------------------------------------- -->
+        <div id="screen-recovery" class="hidden p-4 space-y-3 pb-20">
+          <div class="bg-blue-600 text-white p-3 rounded-xl flex items-center space-x-3 shadow-xs">
+            <i class="fa-solid fa-notes-medical text-2xl text-blue-100"></i>
+            <div>
+              <h3 class="font-bold text-sm">Post-Op Recovery & After-Care</h3>
+              <p class="text-[10px] text-blue-100">Daily Monitoring & AI Interaction System</p>
+            </div>
+          </div>
+
+          <!-- Recovery Sub-Tabs Navigation -->
+          <div class="flex border border-slate-200 bg-slate-100 p-1 rounded-xl text-[11px] font-semibold space-x-1">
+            <button id="btn-rec-tab-meds" onclick="switchRecoverySubTab('meds')" class="flex-1 py-1.5 rounded-lg bg-white text-blue-700 shadow-xs text-center">Meds</button>
+            <button id="btn-rec-tab-diet" onclick="switchRecoverySubTab('diet')" class="flex-1 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center">Diet</button>
+            <button id="btn-rec-tab-vitals" onclick="switchRecoverySubTab('vitals')" class="flex-1 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center">Vitals</button>
+            <button id="btn-rec-tab-followup" onclick="switchRecoverySubTab('followup')" class="flex-1 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center">Follow-up</button>
+          </div>
+
+          <!-- Sub-tab 1: Medication Tracking & AI Interaction Alert -->
+          <div id="rec-subtab-meds" class="space-y-3">
+            <!-- AI Interaction Warning Banner -->
+            <div class="bg-amber-50 border border-amber-200 text-amber-900 p-2.5 rounded-xl text-xs flex items-start space-x-2">
+              <i class="fa-solid fa-triangle-exclamation text-amber-600 text-sm mt-0.5"></i>
+              <div>
+                <strong class="font-bold">AI Drug Interaction Alert:</strong>
+                <p class="text-[10px] text-amber-800 mt-0.5">Do not combine Amoxicillin with Antacids within 2 hours. Spacing required.</p>
+              </div>
+            </div>
+
+            <!-- Med List -->
+            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-2">
+              <h4 class="font-bold text-xs text-slate-800 flex justify-between">
+                <span>Today's Prescriptions</span>
+                <span class="text-[10px] font-normal text-slate-500">Stock Tracker Active</span>
+              </h4>
+              
+              <div class="space-y-2 text-xs">
+                <div class="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-200">
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" checked class="accent-blue-600 w-4 h-4">
+                    <div>
+                      <div class="font-bold text-slate-800">Amoxicillin 500mg</div>
+                      <div class="text-[10px] text-slate-500">1 Tablet • After Breakfast (8:00 AM)</div>
+                    </div>
+                  </div>
+                  <span class="text-[10px] text-blue-700 font-mono font-bold">12/20 Left</span>
+                </div>
+
+                <div class="flex items-center justify-between p-2 bg-slate-50 rounded-lg border border-slate-200">
+                  <div class="flex items-center space-x-2">
+                    <input type="checkbox" class="accent-blue-600 w-4 h-4">
+                    <div>
+                      <div class="font-bold text-slate-800">Paracetamol 650mg</div>
+                      <div class="text-[10px] text-slate-500">1 Tablet • Post Lunch (2:00 PM)</div>
+                    </div>
+                  </div>
+                  <span class="text-[10px] text-amber-600 font-mono font-bold">Due in 45m</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-tab 2: Diet & Hydration Tracker -->
+          <div id="rec-subtab-diet" class="hidden space-y-3">
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+              <h4 class="font-bold text-xs text-slate-800">Hydration Counter</h4>
+              <div class="flex items-center justify-between bg-blue-50/60 p-3 rounded-xl border border-blue-100">
+                <div class="flex items-center space-x-3">
+                  <i class="fa-solid fa-glass-water text-2xl text-blue-600"></i>
+                  <div>
+                    <div class="text-xs font-bold text-slate-800"><span id="diet-water-count">5</span> / 8 Glasses</div>
+                    <div class="text-[10px] text-slate-500">Goal: 2.0 Liters Daily</div>
+                  </div>
+                </div>
+                <div class="flex space-x-1">
+                  <button onclick="adjustWater(-1)" class="w-7 h-7 bg-white text-slate-700 rounded border border-slate-300 font-bold text-xs">-</button>
+                  <button onclick="adjustWater(1)" class="w-7 h-7 bg-blue-600 text-white rounded font-bold text-xs">+</button>
+                </div>
+              </div>
+
+              <!-- Macro summary -->
+              <div>
+                <h4 class="font-bold text-xs text-slate-800 mb-1.5">Post-Op Nutrition Breakdown</h4>
+                <div class="grid grid-cols-3 gap-2 text-center text-[10px]">
+                  <div class="bg-slate-50 p-2 rounded border border-slate-200">
+                    <span class="text-slate-500 block">Protein</span>
+                    <span class="font-bold text-slate-800">65g / 80g</span>
+                  </div>
+                  <div class="bg-slate-50 p-2 rounded border border-slate-200">
+                    <span class="text-slate-500 block">Carbs</span>
+                    <span class="font-bold text-slate-800">140g / 180g</span>
+                  </div>
+                  <div class="bg-slate-50 p-2 rounded border border-slate-200">
+                    <span class="text-slate-500 block">Calories</span>
+                    <span class="font-bold text-slate-800">1650 kcal</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-tab 3: Symptom & Vitals Tracker (Chart.js dynamic graph) -->
+          <div id="rec-subtab-vitals" class="hidden space-y-3">
+            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
+              <div class="flex justify-between items-center mb-2">
+                <h4 class="font-bold text-xs text-slate-800">Pain & Temp 7-Day Trend</h4>
+                <span class="text-[9px] bg-blue-50 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded font-medium">AI Anomaly Clean</span>
+              </div>
+              <div class="h-44 w-full">
+                <canvas id="vitalsChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-tab 4: Follow-up & Appointment Monitoring -->
+          <div id="rec-subtab-followup" class="hidden space-y-3">
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs space-y-3">
+              <div class="border-b pb-2">
+                <h4 class="font-bold text-xs text-slate-800">Next Doctor Checkup</h4>
+                <p class="text-[11px] text-blue-600 font-medium mt-0.5">Dr. Rajesh Verma • Post-Op Wound Review</p>
+              </div>
+              
+              <div class="bg-slate-900 text-white p-3 rounded-xl text-center shadow-xs">
+                <div class="text-[10px] text-blue-300 uppercase font-mono mb-1">Checkup Countdown</div>
+                <div class="text-xl font-mono font-bold text-blue-400" id="followup-timer">02 Days : 14 Hrs : 22 Mins</div>
+              </div>
+
+              <button onclick="syncCalendarAction()" class="w-full bg-blue-50 hover:bg-blue-100 border border-blue-200 font-semibold py-2 rounded-lg text-xs text-blue-700 flex items-center justify-center space-x-2">
+                <i class="fa-regular fa-calendar-plus text-blue-600"></i>
+                <span>1-Tap Sync to Calendar</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Bottom Smartphone Navigation Bar -->
+      <div id="phone-bottom-nav" class="bg-white border-t border-slate-200 text-slate-400 grid grid-cols-5 py-2 text-center text-[10px] shrink-0 z-20 shadow-xs">
+        <button onclick="navToPhoneTab('tab-home')" id="nav-item-home" class="flex flex-col items-center text-blue-600 font-bold">
+          <i class="fa-solid fa-house text-base mb-0.5"></i>
+          <span>Home</span>
+        </button>
+        <button onclick="navToPhoneTab('tab-triage')" id="nav-item-triage" class="flex flex-col items-center text-slate-500 hover:text-blue-600">
+          <i class="fa-solid fa-robot text-base mb-0.5"></i>
+          <span>Triage</span>
+        </button>
+        <button onclick="navToPhoneTab('tab-clinics')" id="nav-item-clinics" class="flex flex-col items-center text-slate-500 hover:text-blue-600">
+          <i class="fa-solid fa-hospital text-base mb-0.5"></i>
+          <span>Clinics</span>
+        </button>
+        <button onclick="navToPhoneTab('tab-recovery')" id="nav-item-recovery" class="flex flex-col items-center text-slate-500 hover:text-blue-600">
+          <i class="fa-solid fa-heart-pulse text-base mb-0.5"></i>
+          <span>Recovery</span>
+        </button>
+        <button onclick="navToPhoneTab('tab-sos')" id="nav-item-sos" class="flex flex-col items-center text-rose-500 hover:text-rose-600">
+          <i class="fa-solid fa-triangle-exclamation text-base mb-0.5"></i>
+          <span>SOS</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- MODE 2: PRESENTATION DECK MODE                                   -->
+    <!-- ================================================================= -->
+    <div id="mode-deck-container" class="hidden w-full max-w-5xl h-[700px] bg-white rounded-2xl border border-slate-200 shadow-xl flex flex-col overflow-hidden">
+      
+      <!-- Slide Container -->
+      <div class="flex-grow relative overflow-hidden bg-slate-50 text-slate-800 p-8 sm:p-12 flex flex-col justify-center">
+        
+        <!-- SLIDE 1: TITLE SLIDE -->
+        <div id="slide-1" class="deck-slide space-y-6 max-w-3xl">
+          <div class="inline-block bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full border border-blue-200 uppercase tracking-widest">
+            Healthcare Innovation Pitch
+          </div>
+          <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight text-slate-900">
+            HealthCo <span class="text-blue-600 block mt-1">Next-Gen AI Health & Recovery Platform</span>
+          </h1>
+          <p class="text-slate-600 text-base sm:text-lg leading-relaxed">
+            Bridging triage accessibility, critical emergency response delays, and post-discharge recovery gaps with a unified, dual-dispatch mobile system.
+          </p>
+          <div class="pt-4 flex items-center space-x-6 text-xs text-slate-500 font-mono">
+            <span>Presenter: Team HealthCo</span>
+            <span>•</span>
+            <span>Prototype Version 2.4</span>
+          </div>
+        </div>
+
+        <!-- SLIDE 2: PROBLEM STATEMENT & SCOPE -->
+        <div id="slide-2" class="deck-slide hidden space-y-6 max-w-4xl">
+          <div class="text-blue-600 text-xs font-bold uppercase tracking-widest">01. Problem & Scope</div>
+          <h2 class="text-3xl font-bold text-slate-900">Key Challenges in Modern Healthcare</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
+              <i class="fa-solid fa-clock-rotate-left text-2xl text-amber-500 mb-3"></i>
+              <h3 class="font-bold text-sm mb-1 text-slate-900">Inaccessible Triage</h3>
+              <p class="text-xs text-slate-600">Patients struggle to evaluate symptom severity, overloading ERs with non-emergencies while delaying urgent care.</p>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
+              <i class="fa-solid fa-truck-medical text-2xl text-rose-500 mb-3"></i>
+              <h3 class="font-bold text-sm mb-1 text-slate-900">Emergency Delays</h3>
+              <p class="text-xs text-slate-600">Fragmented dispatch systems fail to simultaneously inform emergency contacts and nearby ambulance networks.</p>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
+              <i class="fa-solid fa-user-xmark text-2xl text-blue-600 mb-3"></i>
+              <h3 class="font-bold text-sm mb-1 text-slate-900">Post-Discharge Gaps</h3>
+              <p class="text-xs text-slate-600">Lack of daily vital tracking and medication safety alerts leads to high 30-day readmission rates.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- SLIDE 3: SYSTEM ARCHITECTURE & WORKFLOW -->
+        <div id="slide-3" class="deck-slide hidden space-y-6 max-w-4xl">
+          <div class="text-blue-600 text-xs font-bold uppercase tracking-widest">02. Technical Architecture</div>
+          <h2 class="text-3xl font-bold text-slate-900">System Architecture & Data Workflow</h2>
+          <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs space-y-4">
+            <div class="grid grid-cols-4 gap-2 text-center text-xs font-semibold">
+              <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg text-blue-800">Mobile Client (Flutter/React)</div>
+              <div class="bg-sky-50 border border-sky-200 p-3 rounded-lg text-sky-800">FastAPI Gateway</div>
+              <div class="bg-indigo-50 border border-indigo-200 p-3 rounded-lg text-indigo-800">OpenAI Triage Engine</div>
+              <div class="bg-rose-50 border border-rose-200 p-3 rounded-lg text-rose-800">Dual Dispatch Router</div>
+            </div>
+            <div class="text-center text-xs text-slate-500 pt-2 font-mono">
+              Client UI ──(REST/WebSockets)──► API Middleware ──► Clinical Inference ──► Emergency Alerts
+            </div>
+          </div>
+        </div>
+
+        <!-- SLIDE 4: CORE MODULES OVERVIEW -->
+        <div id="slide-4" class="deck-slide hidden space-y-6 max-w-4xl">
+          <div class="text-blue-600 text-xs font-bold uppercase tracking-widest">03. Feature Set</div>
+          <h2 class="text-3xl font-bold text-slate-900">4 Pillars of HealthCo</h2>
+          <div class="grid grid-cols-2 gap-4 text-xs">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-start space-x-3">
+              <div class="p-2 bg-blue-50 text-blue-600 rounded-lg"><i class="fa-solid fa-robot text-lg"></i></div>
+              <div>
+                <strong class="text-sm block font-bold text-slate-900 mb-1">1. Multi-Modal AI Triage</strong>
+                <p class="text-slate-600">Processes text, voice input, and uploaded lab report images for red/yellow/green classification.</p>
+              </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-start space-x-3">
+              <div class="p-2 bg-sky-50 text-sky-600 rounded-lg"><i class="fa-solid fa-hospital-user text-lg"></i></div>
+              <div>
+                <strong class="text-sm block font-bold text-slate-900 mb-1">2. Clinic Finder & Pass</strong>
+                <p class="text-slate-600">Geo-located specialist matching with instant slot booking and digital QR token receipts.</p>
+              </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-start space-x-3">
+              <div class="p-2 bg-rose-50 text-rose-600 rounded-lg"><i class="fa-solid fa-shield-cat text-lg"></i></div>
+              <div>
+                <strong class="text-sm block font-bold text-slate-900 mb-1">3. Dual Dispatch SOS</strong>
+                <p class="text-slate-600">Parallel emergency trigger routing live GPS to nearest ambulance and emergency contacts.</p>
+              </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-start space-x-3">
+              <div class="p-2 bg-indigo-50 text-indigo-600 rounded-lg"><i class="fa-solid fa-kit-medical text-lg"></i></div>
+              <div>
+                <strong class="text-sm block font-bold text-slate-900 mb-1">4. Recovery Dashboard</strong>
+                <p class="text-slate-600">AI drug interaction flags, hydration tracker, vitals trend graphs, and follow-up timers.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SLIDE 5: TECH STACK & REQUIREMENTS -->
+        <div id="slide-5" class="deck-slide hidden space-y-6 max-w-4xl">
+          <div class="text-blue-600 text-xs font-bold uppercase tracking-widest">04. Technology Stack</div>
+          <h2 class="text-3xl font-bold text-slate-900">Tech Stack & Integration Matrix</h2>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+              <div class="text-blue-600 font-bold text-sm mb-1">Frontend</div>
+              <div class="text-xs text-slate-600">React.js / Flutter, Tailwind CSS</div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+              <div class="text-sky-600 font-bold text-sm mb-1">Backend</div>
+              <div class="text-xs text-slate-600">FastAPI, Python 3.11, PostgreSQL</div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+              <div class="text-indigo-600 font-bold text-sm mb-1">AI Engine</div>
+              <div class="text-xs text-slate-600">OpenAI API, Custom Triage Model</div>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+              <div class="text-rose-600 font-bold text-sm mb-1">Services</div>
+              <div class="text-xs text-slate-600">Twilio SMS, WebSockets, Maps API</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SLIDE 6: OUTCOMES & IMPACT -->
+        <div id="slide-6" class="deck-slide hidden space-y-6 max-w-4xl">
+          <div class="text-blue-600 text-xs font-bold uppercase tracking-widest">05. Impact & Vision</div>
+          <h2 class="text-3xl font-bold text-slate-900">Expected Clinical Outcomes</h2>
+          <div class="grid grid-cols-3 gap-4 text-center">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+              <div class="text-3xl font-black text-blue-600 mb-1">-40%</div>
+              <div class="text-xs font-semibold text-slate-700">ER Response Latency</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+              <div class="text-3xl font-black text-emerald-600 mb-1">85%</div>
+              <div class="text-xs font-semibold text-slate-700">Adherence to Meds</div>
+            </div>
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-xs">
+              <div class="text-3xl font-black text-indigo-600 mb-1">3x</div>
+              <div class="text-xs font-semibold text-slate-700">Faster Triage Speed</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Slide Controls Bar -->
+      <div class="bg-slate-100 px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+        <div class="text-xs text-slate-600 font-mono">
+          Slide <span id="deck-slide-num" class="text-blue-600 font-bold">1</span> of 6
+        </div>
+        <div class="flex items-center space-x-3">
+          <button onclick="changeSlide(-1)" class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow-xs">
+            <i class="fa-solid fa-chevron-left mr-1"></i> Prev
+          </button>
+          <button onclick="changeSlide(1)" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow-xs">
+            Next <i class="fa-solid fa-chevron-right ml-1"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+  <script>
+    let currentSlide = 1;
+    let chartInstance = null;
+    let selectedConsultMode = 'In-Person';
+    let selectedDocName = '';
+    let selectedDocSpec = '';
+
+    // Define global core functions first to prevent reference errors on button clicks
+    function loginUser() {
+      const name = document.getElementById('login-fullname')?.value || 'Sneha Dennis';
+      const email = document.getElementById('login-email')?.value || 'sneha.dennis@healthco.org';
+      
+      document.getElementById('screen-auth').classList.add('hidden');
+      document.getElementById('screen-dashboard').classList.remove('hidden');
+      
+      const headerUserMenu = document.getElementById('header-user-menu');
+      if (headerUserMenu) {
+        headerUserMenu.classList.remove('hidden');
+      }
+    }
+
+    function logoutUser() {
+      document.getElementById('screen-dashboard').classList.add('hidden');
+      document.getElementById('screen-triage').classList.add('hidden');
+      document.getElementById('screen-clinics').classList.add('hidden');
+      document.getElementById('screen-sos').classList.add('hidden');
+      document.getElementById('screen-recovery').classList.add('hidden');
+      
+      document.getElementById('screen-auth').classList.remove('hidden');
+      
+      const headerUserMenu = document.getElementById('header-user-menu');
+      if (headerUserMenu) {
+        headerUserMenu.classList.add('hidden');
+      }
+    }
+
+    function switchMainMode(mode) {
+      const phoneContainer = document.getElementById('mode-phone-container');
+      const deckContainer = document.getElementById('mode-deck-container');
+      const btnPhone = document.getElementById('btn-mode-phone');
+      const btnDeck = document.getElementById('btn-mode-deck');
+
+      if (mode === 'phone') {
+        phoneContainer.classList.remove('hidden');
+        deckContainer.classList.add('hidden');
+        btnPhone.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 transition-all bg-blue-600 text-white shadow-xs";
+        btnDeck.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 transition-all text-slate-600 hover:text-blue-600";
+      } else {
+        phoneContainer.classList.add('hidden');
+        deckContainer.classList.remove('hidden');
+        btnDeck.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 transition-all bg-blue-600 text-white shadow-xs";
+        btnPhone.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2 transition-all text-slate-600 hover:text-blue-600";
+      }
+    }
+
+    function navToPhoneTab(tabId) {
+      const screens = ['screen-dashboard', 'screen-triage', 'screen-clinics', 'screen-sos', 'screen-recovery'];
+      screens.forEach(s => document.getElementById(s).classList.add('hidden'));
+
+      const navItems = ['nav-item-home', 'nav-item-triage', 'nav-item-clinics', 'nav-item-sos', 'nav-item-recovery'];
+      navItems.forEach(n => {
+        const el = document.getElementById(n);
+        if(el) el.className = "flex flex-col items-center text-slate-500 hover:text-blue-600";
+      });
+
+      if (tabId === 'tab-home') {
+        document.getElementById('screen-dashboard').classList.remove('hidden');
+        document.getElementById('nav-item-home').className = "flex flex-col items-center text-blue-600 font-bold";
+      } else if (tabId === 'tab-triage') {
+        document.getElementById('screen-triage').classList.remove('hidden');
+        document.getElementById('nav-item-triage').className = "flex flex-col items-center text-blue-600 font-bold";
+      } else if (tabId === 'tab-clinics') {
+        document.getElementById('screen-clinics').classList.remove('hidden');
+        document.getElementById('nav-item-clinics').className = "flex flex-col items-center text-blue-600 font-bold";
+      } else if (tabId === 'tab-sos') {
+        document.getElementById('screen-sos').classList.remove('hidden');
+        document.getElementById('nav-item-sos').className = "flex flex-col items-center text-rose-500 font-bold";
+      } else if (tabId === 'tab-recovery') {
+        document.getElementById('screen-recovery').classList.remove('hidden');
+        document.getElementById('nav-item-recovery').className = "flex flex-col items-center text-blue-600 font-bold";
+      }
+    }
+
+    // Modal Booking Actions
+    function openBookingModal(docName, spec) {
+      selectedDocName = docName;
+      selectedDocSpec = spec;
+      document.getElementById('modal-doc-title').innerText = `Book ${docName}`;
+      document.getElementById('booking-modal').classList.remove('hidden');
+    }
+
+    function closeBookingModal() {
+      document.getElementById('booking-modal').classList.add('hidden');
+    }
+
+    function setConsultMode(mode) {
+      selectedConsultMode = mode;
+      const btnInperson = document.getElementById('btn-mode-inperson');
+      const btnTele = document.getElementById('btn-mode-tele');
+      if (mode === 'In-Person') {
+        btnInperson.className = "py-1.5 border border-blue-600 bg-blue-50 text-blue-700 font-semibold rounded text-xs";
+        btnTele.className = "py-1.5 border border-slate-300 bg-white text-slate-600 rounded text-xs";
+      } else {
+        btnTele.className = "py-1.5 border border-blue-600 bg-blue-50 text-blue-700 font-semibold rounded text-xs";
+        btnInperson.className = "py-1.5 border border-slate-300 bg-white text-slate-600 rounded text-xs";
+      }
+    }
+
+    function confirmAppointmentBooking() {
+      const timeVal = document.getElementById('booking-time-input').value;
+      closeBookingModal();
+      
+      const receipt = document.getElementById('active-booking-receipt');
+      if (receipt) {
+        document.getElementById('receipt-doc-name').innerText = selectedDocName;
+        document.getElementById('receipt-details').innerText = `${timeVal ? new Date(timeVal).toLocaleString() : 'Today, 4:30 PM'} • ${selectedConsultMode}`;
+        document.getElementById('receipt-token-id').innerText = `#HC-TK-${Math.floor(1000 + Math.random() * 9000)}`;
+        receipt.classList.remove('hidden');
+      }
+    }
+
+    // Module Handlers
+    function triggerDualSOSCountdown() {
+      alert("🚨 SOS TRIGGERED!\n\n1. Dispatched Live GPS to Ambulance Services (108/112).\n2. Calling Primary Emergency Contact (Mom: +91 98765 43210)...");
+    }
+
+    function showAddContactPrompt() {
+      const name = prompt("Enter Contact Name:");
+      const phone = prompt("Enter Phone Number:");
+      if (name && phone) {
+        const contactList = document.getElementById('contact-list');
+        const div = document.createElement('div');
+        div.className = "flex justify-between items-center bg-slate-50 p-2 rounded-lg border text-xs";
+        div.innerHTML = `<div><div class="font-semibold text-slate-800">${name}</div><div class="text-[10px] text-slate-500">${phone}</div></div><button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-red-500"><i class="fa-solid fa-trash text-xs"></i></button>`;
+        contactList.appendChild(div);
+      }
+    }
+
+    function triggerReportUploadSim() {
+      document.getElementById('report-upload-placeholder').classList.add('hidden');
+      document.getElementById('report-upload-preview').classList.remove('hidden');
+    }
+
+    function toggleVoiceSim() {
+      const icon = document.getElementById('voice-icon');
+      const waveform = document.getElementById('voice-waveform');
+      const text = document.getElementById('voice-status-text');
+      
+      if (waveform.classList.contains('hidden')) {
+        waveform.classList.remove('hidden');
+        icon.className = "fa-solid fa-square text-rose-500";
+        text.innerText = "Listening... (Speaking)";
+      } else {
+        waveform.classList.add('hidden');
+        icon.className = "fa-solid fa-microphone";
+        text.innerText = "Voice Input Captured";
+      }
+    }
+
+    function runAITriageEngine() {
+      const resultCard = document.getElementById('triage-result-card');
+      resultCard.classList.remove('hidden');
+    }
+
+    function triggerNotificationToast() {
+      alert("🔔 Notification: Meds reminder for Paracetamol 650mg due in 45 mins.");
+    }
+
+    function adjustWater(amount) {
+      const counter = document.getElementById('diet-water-count');
+      const dashCounter = document.getElementById('dash-water-val');
+      let current = parseInt(counter.innerText) + amount;
+      if (current < 0) current = 0;
+      counter.innerText = current;
+      if (dashCounter) dashCounter.innerText = current;
+    }
+
+    function syncCalendarAction() {
+      alert("📅 Appointment synced to Google Calendar / iCal successfully!");
+    }
+
+    function switchRecoverySubTab(tab) {
+      ['meds', 'diet', 'vitals', 'followup'].forEach(t => {
+        document.getElementById(`rec-subtab-${t}`).classList.add('hidden');
+        document.getElementById(`btn-rec-tab-${t}`).className = "flex-1 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 text-center";
+      });
+
+      document.getElementById(`rec-subtab-${tab}`).classList.remove('hidden');
+      document.getElementById(`btn-rec-tab-${tab}`).className = "flex-1 py-1.5 rounded-lg bg-white text-blue-700 shadow-xs text-center font-bold";
+
+      if (tab === 'vitals') {
+        if (!chartInstance) {
+          initChart();
+        } else {
+          chartInstance.resize();
+        }
+      }
+    }
+
+    function changeSlide(dir) {
+      document.getElementById(`slide-${currentSlide}`).classList.add('hidden');
+      currentSlide += dir;
+      if (currentSlide < 1) currentSlide = 6;
+      if (currentSlide > 6) currentSlide = 1;
+      document.getElementById(`slide-${currentSlide}`).classList.remove('hidden');
+      document.getElementById('deck-slide-num').innerText = currentSlide;
+    }
+
+    // Initialize Chart.js Graph with Blue Light Mode theme
+    function initChart() {
+      const chartElem = document.getElementById('vitalsChart');
+      if (!chartElem) return;
+      const ctx = chartElem.getContext('2d');
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
+          datasets: [
+            {
+              label: 'Pain Level (1-10)',
+              data: [7, 6, 5, 3, 2, 2, 1],
+              borderColor: '#2563eb',
+              backgroundColor: 'rgba(37, 99, 235, 0.1)',
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: 'Temp (°F)',
+              data: [100.2, 99.8, 99.1, 98.6, 98.4, 98.6, 98.5],
+              borderColor: '#f43f5e',
+              borderDash: [5, 5],
+              tension: 0.3
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { boxWidth: 10, font: { size: 10 } } }
+          },
+          scales: {
+            y: { ticks: { font: { size: 9 } } },
+            x: { ticks: { font: { size: 9 } } }
+          }
+        }
+      });
+    }
+
+    window.onload = function() {
+      initChart();
+    };
+  </script>
+</body>
+</html>
